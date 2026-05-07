@@ -10,4 +10,6 @@ anggota kelompok :
 Flow Sementara 
 <img width="174" height="471" alt="KS SKJ" src="https://github.com/user-attachments/assets/4c9d6387-112e-472a-a8bb-7b51d51d8b75" />
 
+Output di server
+<img width="1122" height="647" alt="output di server" src="https://github.com/user-attachments/assets/7b00a39a-26d1-47c5-9247-1304efa4b716" />
 
