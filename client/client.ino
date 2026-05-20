@@ -13,13 +13,17 @@ const int port = 5012;
 #define DHTPIN 4       // pin data ke GPIO4
 #define DHTTYPE DHT11  // tipe sensor
 
+// ===== MQ (GAS) CONFIG =====
+#define GASPIN 34      // Pin analog MQ sensor ke GPIO34 (ADC1)
+
 DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("Program DHT11 - Deteksi Suhu");
+  Serial.println("Program DHT11 & MQ - Deteksi Suhu, Kelembaban, Gas");
 
   dht.begin();
+  pinMode(GASPIN, INPUT);
 
   // ===== CONNECT WIFI =====
   Serial.println("Menghubungkan ke WiFi...");
@@ -39,16 +43,26 @@ void loop() {
 
   // ===== BACA SENSOR =====
   float suhu = dht.readTemperature();
+  float kelembaban = dht.readHumidity();
+  int gasVal = analogRead(GASPIN);
 
-  if (isnan(suhu)) {
-    Serial.println("Gagal membaca sensor!");
+  // Cek jika pembacaan sensor gagal
+  if (isnan(suhu) || isnan(kelembaban)) {
+    Serial.println("Gagal membaca sensor DHT!");
     delay(10000);
     return;
   }
 
-  Serial.print("Suhu: ");
+  Serial.print("Suhu       : ");
   Serial.print(suhu);
   Serial.println(" °C");
+  
+  Serial.print("Kelembaban : ");
+  Serial.print(kelembaban);
+  Serial.println(" %");
+
+  Serial.print("Gas (Analog): ");
+  Serial.println(gasVal);
 
   Serial.println("----------------------");
 
@@ -59,8 +73,8 @@ void loop() {
   if (client.connect(host, port)) {
     Serial.println("Terhubung ke server");
 
-    // Format data (bisa kamu ubah nanti)
-    String data = "Suhu: " + String(suhu) + " C";
+    // Format data: "gas,suhu,kelembaban"
+    String data = String(gasVal) + "," + String(suhu) + "," + String(kelembaban);
 
     client.println(data);  // kirim data
 
