@@ -13,6 +13,10 @@ Project ini merupakan sistem monitoring suhu berbasis ESP32 dan sensor DHT11 yan
 Flow Sensor DHT11 & MQ135 ke ESP32
 <img width="754" height="888" alt="flow dht11   mq135 ke esp32" src="https://github.com/user-attachments/assets/56c41cd9-4269-41c2-9637-e57c36f98ff9" />
 
+Rangkaian DHT11 & MQ-135 ke ESP32
+<img width="662" height="570" alt="rangkaian dht11   mq135" src="https://github.com/user-attachments/assets/67942e5e-e64b-4d16-998a-8fa98924311f" />
+
+
 
 flow chart program esp32 
 <img width="1168" height="619" alt="flowchart " src="https://github.com/user-attachments/assets/37d44304-6f90-4af7-a797-34e13ba8cf05" />
