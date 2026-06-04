@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Environment Monitoring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: rgba(255,255,255,0.08);
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --teal: #39d0b0;
+    --teal-dim: rgba(57,208,176,0.12);
+    --amber: #f0a500;
+    --amber-dim: rgba(240,165,0,0.12);
+    --red: #f85149;
+    --red-dim: rgba(248,81,73,0.12);
+    --green: #3fb950;
+    --green-dim: rgba(63,185,80,0.12);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 2rem 1.5rem 4rem;
+  }
+  header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 2.5rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.25rem;
+  }
+  .logo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .logo-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  #last-update {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .pulse { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 6px; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* Metric cards */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.25rem;
+  }
+  .card-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .card-value {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .card-unit { font-size: 14px; font-weight: 400; color: var(--muted); margin-left: 3px; }
+  .card.suhu .card-value { color: var(--amber); }
+  .card.humi .card-value { color: var(--teal); }
+
+  /* Gas status */
+  .gas-card {
+    border-radius: var(--radius);
+    padding: 1.4rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    transition: background 0.4s, border-color 0.4s;
+  }
+  .gas-card.safe   { background: var(--green-dim); border: 1px solid rgba(63,185,80,0.3); }
+  .gas-card.danger { background: var(--red-dim);   border: 1px solid rgba(248,81,73,0.4); }
+  .gas-card.unknown{ background: var(--surface);   border: 1px solid var(--border); }
+  .gas-icon { font-size: 36px; }
+  .gas-title { font-size: 18px; font-weight: 600; }
+  .gas-sub { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .gas-card.safe   .gas-title { color: var(--green); }
+  .gas-card.danger .gas-title { color: var(--red); }
+  .gas-card.unknown .gas-title { color: var(--muted); }
+
+  /* Chart sections */
+  .section { margin-bottom: 2.5rem; }
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .section-title { font-size: 15px; font-weight: 600; }
+  .section-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .chart-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    position: relative;
+  }
+  .chart-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 2rem;
+  }
+  @media(max-width: 600px) { .chart-row { grid-template-columns: 1fr; } }
+  canvas { display: block; }
+
+  /* Scrolling data table */
+  .table-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; font-family: 'DM Mono', monospace; font-size: 12px; }
+  th { background: rgba(255,255,255,0.04); padding: 10px 14px; text-align: left; color: var(--muted); font-weight: 400; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); }
+  td { padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 500;
+  }
+  .badge-safe   { background: var(--green-dim); color: var(--green); }
+  .badge-danger { background: var(--red-dim);   color: var(--red); }
+  .badge-na     { background: rgba(255,255,255,0.06); color: var(--muted); }
+
+  .no-data { text-align: center; padding: 3rem; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-eyebrow">IoT Dashboard</span>
+    <h1>Environment Monitoring</h1>
+  </div>
+  <span id="last-update"><span class="pulse"></span>Menunggu data...</span>
+</header>
+
+<!-- Metric cards -->
+<div class="metrics">
+  <div class="card suhu">
+    <div class="card-label">Suhu Terkini</div>
+    <div class="card-value" id="val-suhu">—<span class="card-unit">°C</span></div>
+  </div>
+  <div class="card humi">
+    <div class="card-label">Kelembaban Terkini</div>
+    <div class="card-value" id="val-humi">—<span class="card-unit">%</span></div>
+  </div>
+  <div class="card">
+    <div class="card-label">Nilai Gas</div>
+    <div class="card-value" id="val-gas" style="color:var(--text)">—<span class="card-unit">ppm</span></div>
+  </div>
+  <div class="card">
+    <div class="card-label">Total Data</div>
+    <div class="card-value" id="val-total" style="color:var(--text)">—</div>
+  </div>
+</div>
+
+<!-- Gas status banner -->
+<div class="gas-card unknown" id="gas-banner">
+  <span class="gas-icon" id="gas-icon">🔍</span>
+  <div>
+    <div class="gas-title" id="gas-title">Menunggu data sensor gas...</div>
+    <div class="gas-sub" id="gas-sub">Nilai gas belum tersedia</div>
+  </div>
+</div>
+
+<!-- Real-time charts -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-title">Grafik Real-time</span>
+    <span class="section-sub">50 data terakhir</span>
+  </div>
+  <div class="chart-row">
+    <div class="chart-box">
+      <div style="font-size:12px; color:var(--muted); margin-bottom:10px; font-family:'DM Mono',monospace;">SUHU (°C)</div>
+      <div style="position:relative; height:200px;">
+        <canvas id="chart-suhu-rt" role="img" aria-label="Grafik real-time suhu sensor">Data suhu real-time</canvas>
+      </div>
+    </div>
+    <div class="chart-box">
+      <div style="font-size:12px; color:var(--muted); margin-bottom:10px; font-family:'DM Mono',monospace;">KELEMBABAN (%)</div>
+      <div style="position:relative; height:200px;">
+        <canvas id="chart-humi-rt" role="img" aria-label="Grafik real-time kelembaban sensor">Data kelembaban real-time</canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Average charts -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-title">Rata-rata per 10 Data</span>
+    <span class="section-sub">beserta timestamp batch</span>
+  </div>
+  <div class="chart-row">
+    <div class="chart-box">
+      <div style="font-size:12px; color:var(--muted); margin-bottom:10px; font-family:'DM Mono',monospace;">AVG SUHU (°C)</div>
+      <div style="position:relative; height:200px;">
+        <canvas id="chart-suhu-avg" role="img" aria-label="Grafik rata-rata suhu per 10 data">Rata-rata suhu</canvas>
+      </div>
+    </div>
+    <div class="chart-box">
+      <div style="font-size:12px; color:var(--muted); margin-bottom:10px; font-family:'DM Mono',monospace;">AVG KELEMBABAN (%)</div>
+      <div style="position:relative; height:200px;">
+        <canvas id="chart-humi-avg" role="img" aria-label="Grafik rata-rata kelembaban per 10 data">Rata-rata kelembaban</canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent data table -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-title">Data Terbaru</span>
+    <span class="section-sub">10 entri terakhir</span>
+  </div>
+  <div class="table-box">
+    <table>
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Suhu (°C)</th>
+          <th>Kelembaban (%)</th>
+          <th>Gas (ppm)</th>
+          <th>Status Gas</th>
+        </tr>
+      </thead>
+      <tbody id="data-table">
+        <tr><td colspan="5" class="no-data">Menunggu data...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const GAS_THRESHOLD = 400;
+const CHART_OPTS_BASE = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: { duration: 400 },
+  plugins: { legend: { display: false }, tooltip: {
+    backgroundColor: '#1c2333',
+    titleColor: '#7d8590',
+    bodyColor: '#e6edf3',
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
+    titleFont: { family: "'DM Mono', monospace", size: 11 },
+    bodyFont: { family: "'DM Mono', monospace", size: 12 },
+    padding: 10
+  }},
+  scales: {
+    x: { ticks: { color: '#7d8590', font: { family: "'DM Mono', monospace", size: 10 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+    y: { ticks: { color: '#7d8590', font: { family: "'DM Mono', monospace", size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+  }
+};
+
+function makeChart(id, color) {
+  return new Chart(document.getElementById(id), {
+    type: 'line',
+    data: { labels: [], datasets: [{ data: [], borderColor: color, backgroundColor: color + '22', fill: true, tension: 0.3, pointRadius: 3, pointBackgroundColor: color, borderWidth: 2 }] },
+    options: JSON.parse(JSON.stringify(CHART_OPTS_BASE))
+  });
+}
+
+const charts = {
+  suhuRt:   makeChart('chart-suhu-rt',   '#f0a500'),
+  humiRt:   makeChart('chart-humi-rt',   '#39d0b0'),
+  suhuAvg:  makeChart('chart-suhu-avg',  '#f0a500'),
+  humiAvg:  makeChart('chart-humi-avg',  '#39d0b0'),
+};
+
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts.replace(' ', 'T'));
+  return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function fmtDate(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts.replace(' ', 'T'));
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) + ' ' +
+         d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+}
+
+function updateGasBanner(gasVal) {
+  const banner = document.getElementById('gas-banner');
+  const icon   = document.getElementById('gas-icon');
+  const title  = document.getElementById('gas-title');
+  const sub    = document.getElementById('gas-sub');
+  banner.className = 'gas-card';
+
+  if (gasVal === null || gasVal === undefined) {
+    banner.classList.add('unknown');
+    icon.textContent  = '🔍';
+    title.textContent = 'Data gas tidak tersedia';
+    sub.textContent   = 'Sensor gas belum mengirimkan data';
+  } else if (gasVal >= GAS_THRESHOLD) {
+    banner.classList.add('danger');
+    icon.textContent  = '⚠️';
+    title.textContent = 'Gas Berbahaya Terdeteksi!';
+    sub.textContent   = `Nilai: ${gasVal.toFixed(1)} ppm — melebihi ambang batas ${GAS_THRESHOLD} ppm`;
+  } else {
+    banner.classList.add('safe');
+    icon.textContent  = '✅';
+    title.textContent = 'Tidak Ada Gas Berbahaya';
+    sub.textContent   = `Nilai: ${gasVal.toFixed(1)} ppm — di bawah ambang batas ${GAS_THRESHOLD} ppm`;
+  }
+}
+
+function updateChart(chart, labels, values) {
+  chart.data.labels = labels;
+  chart.data.datasets[0].data = values;
+  chart.update('none');
+}
+
+async function fetchLatest() {
+  try {
+    const res = await fetch('/api/latest');
+    const rows = await res.json();
+    if (!rows.length) return;
+
+    const last = rows[rows.length - 1];
+    document.getElementById('val-suhu').innerHTML = last.sensor_suhu != null
+      ? `${last.sensor_suhu.toFixed(1)}<span class="card-unit">°C</span>` : `—<span class="card-unit">°C</span>`;
+    document.getElementById('val-humi').innerHTML = last.sensor_kelembaban != null
+      ? `${last.sensor_kelembaban.toFixed(1)}<span class="card-unit">%</span>` : `—<span class="card-unit">%</span>`;
+    document.getElementById('val-gas').innerHTML = last.sensor_gas != null
+      ? `${last.sensor_gas.toFixed(1)}<span class="card-unit">ppm</span>` : `—<span class="card-unit">ppm</span>`;
+    document.getElementById('val-total').textContent = rows.length;
+
+    updateGasBanner(last.sensor_gas);
+    document.getElementById('last-update').innerHTML =
+      `<span class="pulse"></span>Update: ${fmtTime(last.timestamp)}`;
+
+    const labels = rows.map(r => fmtTime(r.timestamp));
+    updateChart(charts.suhuRt, labels, rows.map(r => r.sensor_suhu));
+    updateChart(charts.humiRt, labels, rows.map(r => r.sensor_kelembaban));
+
+    // Tabel 10 terakhir
+    const tbody = document.getElementById('data-table');
+    const recent = rows.slice(-10).reverse();
+    tbody.innerHTML = recent.map(r => {
+      const gasVal = r.sensor_gas;
+      let badge = `<span class="badge badge-na">N/A</span>`;
+      if (gasVal !== null && gasVal !== undefined) {
+        badge = gasVal >= GAS_THRESHOLD
+          ? `<span class="badge badge-danger">Berbahaya</span>`
+          : `<span class="badge badge-safe">Aman</span>`;
+      }
+      return `<tr>
+        <td>${fmtDate(r.timestamp)}</td>
+        <td>${r.sensor_suhu != null ? r.sensor_suhu.toFixed(1) : '—'}</td>
+        <td>${r.sensor_kelembaban != null ? r.sensor_kelembaban.toFixed(1) : '—'}</td>
+        <td>${r.sensor_gas != null ? r.sensor_gas.toFixed(1) : '—'}</td>
+        <td>${badge}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    console.error('latest error', e);
+  }
+}
+
+async function fetchAverage() {
+  try {
+    const res = await fetch('/api/average');
+    const rows = await res.json();
+    if (!rows.length) return;
+    const labels = rows.map(r => fmtTime(r.timestamp));
+    updateChart(charts.suhuAvg, labels, rows.map(r => r.avg_suhu));
+    updateChart(charts.humiAvg, labels, rows.map(r => r.avg_kelembaban));
+  } catch(e) {
+    console.error('average error', e);
+  }
+}
+
+async function refresh() {
+  await Promise.all([fetchLatest(), fetchAverage()]);
+}
+
+refresh();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>
