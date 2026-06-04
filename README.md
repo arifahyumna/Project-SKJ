@@ -1,4 +1,7 @@
 "# Project Kapita Selekta Sistem Jaringan dan Komputer - Kelompok 2"
+
+SISTEM MONITORING KUALITAS LINGKUNGAN ( SUHU, UDARA, DAN KELEMBAPAN)
+ 
 anggota kelompok :
 - Aldi Rawi Albidunanda (23/521351/PA/22421) ( electronics ) 
 - Arifah Yumna (23/516607/PA/22104) ( server programmer )
