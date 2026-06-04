@@ -39,3 +39,8 @@ Setelah data lengkap diterima, dilakukan pengecekan checksum: apakah byte ke-5 (
 Output di server
 <img width="1122" height="647" alt="output di server" src="https://github.com/user-attachments/assets/7b00a39a-26d1-47c5-9247-1304efa4b716" />
 
+
+hasil kirim data dari Mq135 dan dht11 ke esp32 yang berhasil terkirim ke server
+<img width="921" height="681" alt="hasil mq dan dht ke server" src="https://github.com/user-attachments/assets/e8b01166-2976-434d-b05e-9e62ad864bff" />
+
+
