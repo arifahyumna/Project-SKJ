@@ -10,11 +10,11 @@ const char* host = "10.6.6.41";
 const int port = 5012;
 
 
-#define DHTPIN 4       // pin data ke GPIO4
-#define DHTTYPE DHT11  // tipe sensor
+#define DHTPIN 4       
+#define DHTTYPE DHT11 
 
 
-#define GASPIN 34      // Pin analog MQ sensor ke GPIO34 (ADC1)
+#define GASPIN 34      
 
 DHT dht(DHTPIN, DHTTYPE);
 
